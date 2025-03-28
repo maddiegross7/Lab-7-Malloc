@@ -12,11 +12,11 @@ typedef struct chunk {
 Chunk *free_list_head = NULL;
 
 void *traverse_free_list(size_t size){
-    printf("Traversing free list\n");
+    //printf("Traversing free list\n");
     Chunk *current = free_list_head;
     while(current != NULL){
         if(current->size >= size){
-            printf("current: %ul\n", current);
+            //printf("current: %ul\n", current);
             return current;
         }else{
             current = current->next;
@@ -26,7 +26,7 @@ void *traverse_free_list(size_t size){
 }
 
 void insert_chunk(Chunk *newChunk){
-    printf("Inserting chunk\n");
+    //printf("Inserting chunk\n");
     if(free_list_head == NULL){
         free_list_head = newChunk;
     }else if(free_list_head > newChunk){
@@ -48,7 +48,7 @@ void insert_chunk(Chunk *newChunk){
 }
 
 void *my_malloc(size_t bytesToAllocate){
-    printf("Allocating memory\n");
+    //printf("Allocating memory\n");
     int size = (bytesToAllocate + 7 + 8) & -8;
 
     Chunk *chunk = traverse_free_list(size);
@@ -59,18 +59,22 @@ void *my_malloc(size_t bytesToAllocate){
         chunk->prev = NULL;
         insert_chunk(chunk);
     }
-    printf("hello?\n");
-    printf("chunk size: %u\n", chunk->size);
+    //printf("hello?\n");
+    //printf("chunk size: %u\n", chunk->size);
     if(chunk->size - size <= 16){
         return chunk;
     }
     chunk->size -= size;
-    printf("malloced chunk address?: %u\n", (chunk + size + 8));
-    return chunk + size + 8;
+
+    Chunk *newChunk = (Chunk *)((char *)chunk + chunk->size);
+    newChunk->size = size;
+
+    //printf("malloced chunk address?: %u\n", ((char *)chunk + chunk->size + 8));
+    return ((char *)chunk + chunk->size + 8);
 }
 
 void delete_chunk(Chunk *chunkToDelete){
-    printf("Deleting chunk\n");
+    //printf("Deleting chunk\n");
     if(chunkToDelete->prev != NULL){
         chunkToDelete->prev->next = chunkToDelete->next;
     }
@@ -80,14 +84,14 @@ void delete_chunk(Chunk *chunkToDelete){
 }
 
 void my_free(void *ptr){
-    printf("Freeing memory\n");
+    //printf("Freeing memory\n");
     ptr -= 8;
     Chunk *chunk = (Chunk *)ptr;
     insert_chunk(chunk);
 }
 
 void coelasce_free_list(){
-    printf("Coalescing free list\n");
+    //printf("Coalescing free list\n");
     Chunk *current = free_list_head;
     while(current != NULL){
         if(current + current->size == current->next){
@@ -99,12 +103,12 @@ void coelasce_free_list(){
 }
 
 void *free_list_begin(){
-    printf("Free list begin\n");
+    //printf("Free list begin\n");
     return free_list_head;
 }
 
 void *free_list_next(void *node){
-    printf("Free list next\n");
+    //printf("Free list next\n");
     Chunk *chunk = (Chunk *)node;
     return chunk->next;
 }

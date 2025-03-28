@@ -1,7 +1,0 @@
-Allocating memory
-Traversing free list
-Inserting chunk
-hello?
-chunk size: 8192
-malloced chunk address?: 18335616
-Error: pointer number 0 the wrong size (0 instead of 72)
