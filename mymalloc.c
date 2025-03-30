@@ -11,31 +11,34 @@ typedef struct chunk {
 Chunk *free_list_head = NULL;
 
 void *traverse_free_list(size_t size){
-    printf("Traversing free list\n");
+    //start at the head of the list
     Chunk *current = free_list_head;
+    //and keep moving through until we find a piece big enough
     while(current != NULL){
-        printf("current size: %u\n", current->size);
         if(current->size >= size){
-            printf("current: %ul\n", current);
             return current;
         }else{
             current = current->next;
         }
     }
+    //return NUll if there is no piece big enough
     return NULL;
 }
 
+//finding the correct place for this piece of memory to live in my free list
 void insert_chunk(Chunk *newChunk){
-    printf("Inserting chunk again\n");
+    //do i have anything in my list yet?
     if(free_list_head == NULL){
         free_list_head = newChunk;
         return;
+    //is the address of the head greater than the address of the new piece?
     }else if(free_list_head > newChunk){
         newChunk->next = free_list_head;
         free_list_head->prev = newChunk;
         free_list_head = newChunk;
+    //go through the list and find the place that it fits in the sequence of memory
+    //and insert it in that spot, linking everything correctly
     }else{
-        printf("do we get here?\n");
         Chunk *current = free_list_head;
         while(current->next != NULL && current->next < newChunk){
             current = current->next;
@@ -49,9 +52,8 @@ void insert_chunk(Chunk *newChunk){
     }
 }
 
-
+//take this piece out of the free list, reassign the links
 void delete_chunk(Chunk *chunkToDelete){
-    printf("Deleting chunk\n");
     if (free_list_head == chunkToDelete) {
         free_list_head = chunkToDelete->next;
     }
@@ -63,48 +65,44 @@ void delete_chunk(Chunk *chunkToDelete){
     }
 }
 
+//main method
 void *my_malloc(size_t bytesToAllocate){
-    printf("Allocating memory\n");
+    //figure out how much space needs to be allocated
     int size = (bytesToAllocate + 7 + 8) & -8;
 
+    //see if a piece already exists that is big enough for it
     Chunk *chunk = traverse_free_list(size);
+    //no? create a new piece
     if(chunk == NULL){
-        printf("No chunk found, allocating new chunk\n");
         chunk = (Chunk *)sbrk(size > 8192 ? size : 8192);
         chunk->size = size > 8192 ? size : 8192;
         chunk->next = NULL;
         chunk->prev = NULL;
         insert_chunk(chunk);
     }
-    printf("hello?\n");
-    printf("new chunk size 1: %u\n", size);
-    printf("chunk size: %u\n", chunk->size);
 
+    //if the piece that is left over after the math is too tiny, just give the whole thing to the user
+    //and make sure you delete the chunk!!!
     if(chunk->size - size <= 16){ 
-        printf("we are in here\n");
         delete_chunk(chunk);
-        printf("chunk size 1: %u\n", chunk->size);
         return ((char *)chunk + 8);
     }
+    //if we did not do that then we will adjust the size of the old chunk so that it does not include the new chunk
+    chunk->size -= size;
 
-    chunk->size -= size;  // Reduce the size of the current chunk
-    printf("new chunk size 1: %u\n", size);
-    printf("chunk size 2: %u\n", chunk->size);
-
+    //create the new chunk
     Chunk *newChunk = (Chunk *)((char *)chunk + chunk->size);
-    newChunk->size = size;  // Assign size to the new chunk
+    newChunk->size = size; 
     newChunk->next = NULL;
     newChunk->prev = NULL;
     
-    // Correct the chunk pointer arithmetic here
-    printf("malloced chunk address?: %u\n", ((char *)chunk + chunk->size + 8));
+    //return a pointer to new piece of memory but do not pass the address of the piece, because
+    //that is the size and we do not really want that
     return (char*)newChunk + 8;
 }
 
-
-
+//will free memory that was used and then insert it back into the free list to be used again
 void my_free(void *ptr){
-    printf("Freeing memory\n");
     char *charPtr = (char *)ptr - 8;
     Chunk *chunk = (Chunk *)charPtr;
     chunk->next = NULL;
@@ -112,25 +110,24 @@ void my_free(void *ptr){
     insert_chunk(chunk);
 }
 
+//this will add all the pieces of the free list together if they are neighbors in memory, 
 void coalesce_free_list(){
-    printf("Coalescing free list\n");
     Chunk *current = free_list_head;
     while(current != NULL){
         if ((char *)current + current->size == (char *)current->next){
             current->size += current->next->size;
             delete_chunk(current->next);
+        }else{
+            current = current->next;
         }
-        current = current->next;
     }
 }
 
 void *free_list_begin(){
-    printf("Free list begin\n");
     return free_list_head;
 }
 
 void *free_list_next(void *node){
-    printf("Free list next\n");
     Chunk *chunk = (Chunk *)node;
     return chunk->next;
 }
